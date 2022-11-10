@@ -58,3 +58,28 @@ def Gamma(alpha: npt.NDArray, beta: npt.NDArray):
     gamma = ((alpha * beta).T / (alpha * beta).sum(1)).T
 
     return gamma
+
+def BaumWelch(O: npt.NDArray, A: npt.NDArray, mu: npt.NDArray, sigma: npt.NDArray, pi: npt.NDArray, tol: float, niter: int):
+    (T, ) = O.shape
+    (N, ) = mu.shape
+
+    L = 0
+    for _ in range(niter):
+        frames = Frames(O, mu, sigma)
+        alpha = Forward(A, frames, pi)
+        beta = Backward(A, frames)
+        delta = L - Likelihood(alpha)
+        L = L + delta
+
+        if delta < tol:
+            return (A, mu, sigma, pi)
+
+        xi = Xi(A, frames, alpha, beta)
+        gamma = Gamma(alpha, beta)
+
+        A = xi.sum(0) / np.tile(gamma[:T - 1].sum(0), (N, 1)).T
+        sigma = (gamma * np.power((np.tile(O, (N, 1)).T - mu), 2)).sum(0) / gamma.sum(0)
+        mu = (gamma.T * O).sum(1) / gamma.sum(0)
+        pi = gamma[1]
+
+    return (A, mu, sigma, pi)

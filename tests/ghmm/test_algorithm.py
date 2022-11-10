@@ -137,3 +137,85 @@ class test_Alogirthm(unittest.TestCase):
 
         smape = self.SMAPE(self.Gamma(alpha, beta), algo.Gamma(alpha, beta))
         self.assertLessEqual(smape, self.tolerance)
+
+    def BaumWelch(self, O: npt.NDArray, A: npt.NDArray, mu: npt.NDArray, sigma: npt.NDArray, pi: npt.NDArray, tol: float, niter: int):
+        (T, ) = O.shape
+        (N, ) = mu.shape
+
+        A = A.copy()
+        mu = mu.copy()
+        sigma = sigma.copy()
+        pi = pi.copy()
+
+        L = 0
+        for _ in range(niter):
+            frames = self.Frames(O, mu, sigma)
+            alpha = self.Forward(A, frames, pi)
+            beta = self.Backward(A, frames)
+            delta = L - self.Likelihood(alpha)
+            L = L + delta
+
+            if delta < tol:
+                return (A, mu, sigma, pi)
+
+            xi = self.Xi(A, frames, alpha, beta)
+            gamma = self.Gamma(alpha, beta)
+
+            for i in range(N):
+                pi[1] = gamma[1, i]
+
+            for i in range(N):
+                for j in range(N):
+                    numerator = 0
+                    for t in range(T-1):
+                        numerator = numerator + xi[t, i, j]
+                    
+                    denumerator = 0
+                    for t in range(T-1):
+                        denumerator = denumerator + gamma[t, i]
+                    
+                    A[i,j] = numerator / denumerator
+
+            for i in range(N):
+                numerator = 0
+                denumerator = 0
+                for t in range(T):
+                    numerator = numerator + gamma[t, i] * np.power(O[t] - mu[i], 2)
+                    denumerator = denumerator + gamma[t, i]
+
+                sigma[i] = numerator / denumerator
+
+            for i in range(N):
+                numerator = 0
+                denumerator = 0
+                for t in range(T-1):
+                    numerator = numerator + gamma[t, i] * O[t]
+                    denumerator = denumerator + gamma[t, i]
+                
+                mu[i] = numerator / denumerator
+        
+        return (A, mu, sigma, pi)
+
+
+    def test_BaumWelch(self):
+        tol = 1e-3
+        niter = 100
+
+        res = self.BaumWelch(self.O, self.A, self.mu, self.sigma, self.pi, tol, niter)
+        algores = algo.BaumWelch(self.O, self.A, self.mu, self.sigma, self.pi, tol, niter)
+
+        # A
+        smape = self.SMAPE(res[0], algores[0])
+        self.assertLessEqual(smape, self.tolerance)
+
+        # mu
+        smape = self.SMAPE(res[1], algores[1])
+        self.assertLessEqual(smape, self.tolerance)
+
+        # sigma
+        smape = self.SMAPE(res[2], algores[2])
+        self.assertLessEqual(smape, self.tolerance)
+
+        # pi
+        smape = self.SMAPE(res[3], algores[3])
+        self.assertLessEqual(smape, self.tolerance)
