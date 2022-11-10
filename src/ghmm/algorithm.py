@@ -38,3 +38,7 @@ def Backward(A: npt.NDArray, frames: npt.NDArray):
         )
 
     return beta
+
+def Likelihood(alpha: npt.NDArray):
+    L = alpha[-1].sum()
+    return L

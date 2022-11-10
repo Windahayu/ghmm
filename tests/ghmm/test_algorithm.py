@@ -69,8 +69,25 @@ class test_Alogirthm(unittest.TestCase):
                 beta[t, i] = x
 
         return beta
+
     def test_Backward(self):
         frames = self.Frames(self.O, self.mu, self.sigma)
         
         smape = self.SMAPE(self.Backward(self.A, frames), algo.Backward(self.A, frames))
+        self.assertLessEqual(smape, self.tolerance)
+
+    def Likelihood(self, alpha: npt.NDArray):
+        (T, N) = alpha.shape
+        
+        L = 0
+        for i in range(N):
+            L = L + alpha[T - 1, i]
+
+        return L
+
+    def test_Likelihood(self):
+        frames = self.Frames(self.O, self.mu, self.sigma)
+        alpha = self.Forward(self.A, frames, self.pi)
+
+        smape = self.SMAPE(np.array([self.Likelihood(alpha)]), np.array([algo.Likelihood(alpha)]))
         self.assertLessEqual(smape, self.tolerance)
