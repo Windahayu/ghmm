@@ -32,3 +32,23 @@ class test_Alogirthm(unittest.TestCase):
     def test_Frames(self):
         smape = self.SMAPE(self.Frames(self.O, self.mu, self.sigma), algo.Frames(self.O, self.mu, self.sigma))
         self.assertLessEqual(smape, self.tolerance)
+    
+    def Forward(self, A: npt.NDArray, frames: npt.NDArray, pi: npt.NDArray):
+        (T, N) = frames.shape
+        alpha = np.empty((T, N))
+        for i in range(N):
+            alpha[0, i] = pi[i] * frames[0, i]
+        for t in range(1, T):
+            for j in range(N):
+                x = 0 
+                for i in range(N):
+                   x = x + alpha[t-1, i] * A[i, j]
+                alpha[t, j] = x * frames[t, j]
+
+        return alpha
+
+    def test_Forward(self):
+        frames = self.Frames(self.O, self.mu, self.sigma)
+
+        smape = self.SMAPE(self.Forward(self.A, frames, self.pi), algo.Forward(self.A, frames, self.pi))
+        self.assertLessEqual(smape, self.tolerance)
