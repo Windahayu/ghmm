@@ -42,3 +42,14 @@ def Backward(A: npt.NDArray, frames: npt.NDArray):
 def Likelihood(alpha: npt.NDArray):
     L = alpha[-1].sum()
     return L
+
+def Xi(A: npt.NDArray, frames: npt.NDArray, alpha: npt.NDArray, beta: npt.NDArray):
+    (T, N) = frames.shape
+
+    L = Likelihood(alpha)
+
+    xi = np.empty((T-1, N, N))
+    for t in range(T-1):
+        xi[t] = ((alpha[t] * A.T).T * frames[t+1] * beta[t+1]) / L
+
+    return xi

@@ -91,3 +91,24 @@ class test_Alogirthm(unittest.TestCase):
 
         smape = self.SMAPE(np.array([self.Likelihood(alpha)]), np.array([algo.Likelihood(alpha)]))
         self.assertLessEqual(smape, self.tolerance)
+
+    def Xi(self, A: npt.NDArray, frames: npt.NDArray, alpha: npt.NDArray, beta: npt.NDArray):
+        (T, N) = frames.shape
+
+        L = self.Likelihood(alpha)
+
+        xi = np.empty((T-1, N, N))
+        for t in range(T-1):
+            for i in range(N):
+                for j in range(N):
+                    xi[t, i, j] = alpha[t, i] * A[i, j] * frames[t+1, j] * beta[t+1, j] / L
+        
+        return xi
+
+    def test_Xi(self):
+        frames = self.Frames(self.O, self.mu, self.sigma)
+        alpha = self.Forward(self.A, frames, self.pi)
+        beta = self.Backward(self.A, frames)
+
+        smape = self.SMAPE(self.Xi(self.A, frames, alpha, beta), algo.Xi(self.A, frames, alpha, beta))
+        self.assertLessEqual(smape, self.tolerance)
