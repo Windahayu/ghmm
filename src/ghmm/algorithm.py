@@ -14,6 +14,7 @@ def Frames(O: npt.NDArray, mu: npt.NDArray, sigma: npt.NDArray):
 
 def Forward(A: npt.NDArray, frames: npt.NDArray, pi: npt.NDArray):
     (T, N) = frames.shape
+
     alpha = np.empty((T, N))
     alpha[0] = pi * frames[0]
     for t in range(1, T):
@@ -21,4 +22,19 @@ def Forward(A: npt.NDArray, frames: npt.NDArray, pi: npt.NDArray):
             alpha[t-1], 
             A * frames[t]
         )
+
     return alpha
+
+def Backward(A: npt.NDArray, frames: npt.NDArray):
+    (T, N) = frames.shape
+
+    beta = np.empty((T, N))
+
+    beta[-1] = np.ones((N ,))
+    for t in range(T-2, -1, -1):
+        beta[t] = np.matmul(
+            frames[t+1] * beta[t+1],
+            A.T,
+        )
+
+    return beta
