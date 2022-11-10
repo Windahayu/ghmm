@@ -8,10 +8,10 @@ import ghmm.algorithm as algo
 class test_Alogirthm(unittest.TestCase):
     tolerance = 1e-10
 
-    O = np.array([1, 2, 3, 4])
+    O = np.array(range(4))
     A = np.ones((3, 3)) / 9
-    mu = np.array([0, 1, 2])
-    sigma = np.array([1, 2, 3])
+    mu = np.array(range(3))
+    sigma = np.array(range(1, 4))
     pi = np.ones((3)) / 3
 
     def SMAPE(self, M1: npt.NDArray, M2: npt.NDArray):
