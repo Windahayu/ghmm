@@ -155,7 +155,7 @@ class test_Alogirthm(unittest.TestCase):
             delta = L - self.Likelihood(alpha)
             L = L + delta
 
-            if delta < tol:
+            if np.absolute(delta) < tol:
                 return (A, mu, sigma, pi)
 
             xi = self.Xi(A, frames, alpha, beta)

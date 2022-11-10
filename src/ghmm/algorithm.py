@@ -71,7 +71,7 @@ def BaumWelch(O: npt.NDArray, A: npt.NDArray, mu: npt.NDArray, sigma: npt.NDArra
         delta = L - Likelihood(alpha)
         L = L + delta
 
-        if delta < tol:
+        if np.absolute(delta) < tol:
             return (A, mu, sigma, pi)
 
         xi = Xi(A, frames, alpha, beta)
