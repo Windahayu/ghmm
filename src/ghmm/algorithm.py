@@ -53,3 +53,8 @@ def Xi(A: npt.NDArray, frames: npt.NDArray, alpha: npt.NDArray, beta: npt.NDArra
         xi[t] = ((alpha[t] * A.T).T * frames[t+1] * beta[t+1]) / L
 
     return xi
+
+def Gamma(alpha: npt.NDArray, beta: npt.NDArray):
+    gamma = ((alpha * beta).T / (alpha * beta).sum(1)).T
+
+    return gamma

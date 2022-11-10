@@ -112,3 +112,28 @@ class test_Alogirthm(unittest.TestCase):
 
         smape = self.SMAPE(self.Xi(self.A, frames, alpha, beta), algo.Xi(self.A, frames, alpha, beta))
         self.assertLessEqual(smape, self.tolerance)
+
+    def Gamma(self, alpha: npt.NDArray, beta: npt.NDArray):
+        (T, N) = alpha.shape
+
+        gamma = np.empty((T, N))
+        for t in range(T):
+            for i in range(N):
+                nominator = alpha[t, i] * beta[t, i]
+
+                denominator = 0                
+                for j in range(N):
+                    denominator = denominator + alpha[t, j] * beta[t, j]
+
+                gamma[t, i] = nominator / denominator
+
+        return gamma
+
+
+    def test_Gamma(self):
+        frames = self.Frames(self.O, self.mu, self.sigma)
+        alpha = self.Forward(self.A, frames, self.pi)
+        beta = self.Backward(self.A, frames)
+
+        smape = self.SMAPE(self.Gamma(alpha, beta), algo.Gamma(alpha, beta))
+        self.assertLessEqual(smape, self.tolerance)
