@@ -46,11 +46,10 @@ def Likelihood(alpha: npt.NDArray):
 def Xi(A: npt.NDArray, frames: npt.NDArray, alpha: npt.NDArray, beta: npt.NDArray):
     (T, N) = frames.shape
 
-    L = Likelihood(alpha)
-
     xi = np.empty((T-1, N, N))
     for t in range(T-1):
-        xi[t] = ((alpha[t] * A.T).T * frames[t+1] * beta[t+1]) / L
+        xi[t] = ((A.T * alpha[t]).T * frames[t+1] * beta[t+1])
+        xi[t] = xi[t] / xi[t].sum((0, 1))
 
     return xi
 

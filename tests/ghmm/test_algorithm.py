@@ -92,27 +92,6 @@ class test_Alogirthm(unittest.TestCase):
         smape = self.SMAPE(np.array([self.Likelihood(alpha)]), np.array([algo.Likelihood(alpha)]))
         self.assertLessEqual(smape, self.tolerance)
 
-    def Xi(self, A: npt.NDArray, frames: npt.NDArray, alpha: npt.NDArray, beta: npt.NDArray):
-        (T, N) = frames.shape
-
-        L = self.Likelihood(alpha)
-
-        xi = np.empty((T-1, N, N))
-        for t in range(T-1):
-            for i in range(N):
-                for j in range(N):
-                    xi[t, i, j] = alpha[t, i] * A[i, j] * frames[t+1, j] * beta[t+1, j] / L
-        
-        return xi
-
-    def test_Xi(self):
-        frames = self.Frames(self.O, self.mu, self.sigma)
-        alpha = self.Forward(self.A, frames, self.pi)
-        beta = self.Backward(self.A, frames)
-
-        smape = self.SMAPE(self.Xi(self.A, frames, alpha, beta), algo.Xi(self.A, frames, alpha, beta))
-        self.assertLessEqual(smape, self.tolerance)
-
     def Gamma(self, alpha: npt.NDArray, beta: npt.NDArray):
         (T, N) = alpha.shape
 
@@ -136,6 +115,32 @@ class test_Alogirthm(unittest.TestCase):
         beta = self.Backward(self.A, frames)
 
         smape = self.SMAPE(self.Gamma(alpha, beta), algo.Gamma(alpha, beta))
+        self.assertLessEqual(smape, self.tolerance)
+
+    def Xi(self, A: npt.NDArray, frames: npt.NDArray, alpha: npt.NDArray, beta: npt.NDArray):
+        (T, N) = frames.shape
+
+        L = self.Likelihood(alpha)
+
+        xi = np.empty((T-1, N, N))
+        for t in range(T-1):
+            for i in range(N):
+                for j in range(N):
+                    numerator = alpha[t, i] * A[i, j] * frames[t+1, j] * beta[t+1, j]
+                    denominator = 0
+                    for k in range(N):
+                        for l in range(N):
+                            denominator = denominator + alpha[t, k] * A[k, l] * frames[t+1, l] * beta[t+1, l]
+                    xi[t, i, j] = numerator / denominator
+        
+        return xi
+
+    def test_Xi(self):
+        frames = self.Frames(self.O, self.mu, self.sigma)
+        alpha = self.Forward(self.A, frames, self.pi)
+        beta = self.Backward(self.A, frames)
+        
+        smape = self.SMAPE(self.Xi(self.A, frames, alpha, beta), algo.Xi(self.A, frames, alpha, beta))
         self.assertLessEqual(smape, self.tolerance)
 
     def BaumWelch(self, O: npt.NDArray, A: npt.NDArray, mu: npt.NDArray, sigma: npt.NDArray, pi: npt.NDArray, tol: float, niter: int, min_sigma = 1e-5):
