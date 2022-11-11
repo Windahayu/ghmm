@@ -138,7 +138,7 @@ class test_Alogirthm(unittest.TestCase):
         smape = self.SMAPE(self.Gamma(alpha, beta), algo.Gamma(alpha, beta))
         self.assertLessEqual(smape, self.tolerance)
 
-    def BaumWelch(self, O: npt.NDArray, A: npt.NDArray, mu: npt.NDArray, sigma: npt.NDArray, pi: npt.NDArray, tol: float, niter: int):
+    def BaumWelch(self, O: npt.NDArray, A: npt.NDArray, mu: npt.NDArray, sigma: npt.NDArray, pi: npt.NDArray, tol: float, niter: int, min_sigma = 1e-5):
         (T, ) = O.shape
         (N, ) = mu.shape
 
@@ -147,7 +147,7 @@ class test_Alogirthm(unittest.TestCase):
         sigma = sigma.copy()
         pi = pi.copy()
 
-        L = 0
+        L = 1
         for _ in range(niter):
             frames = self.Frames(O, mu, sigma)
             alpha = self.Forward(A, frames, pi)
@@ -162,38 +162,40 @@ class test_Alogirthm(unittest.TestCase):
             gamma = self.Gamma(alpha, beta)
 
             for i in range(N):
-                pi[1] = gamma[1, i]
-
-            for i in range(N):
                 for j in range(N):
                     numerator = 0
                     for t in range(T-1):
                         numerator = numerator + xi[t, i, j]
                     
-                    denumerator = 0
+                    denominator = 0
                     for t in range(T-1):
-                        denumerator = denumerator + gamma[t, i]
+                        denominator = denominator + gamma[t, i]
                     
-                    A[i,j] = numerator / denumerator
+                    A[i, j] = numerator / denominator
 
             for i in range(N):
                 numerator = 0
-                denumerator = 0
+                denominator = 0
                 for t in range(T):
                     numerator = numerator + gamma[t, i] * np.power(O[t] - mu[i], 2)
-                    denumerator = denumerator + gamma[t, i]
+                    denominator = denominator + gamma[t, i]
 
-                sigma[i] = numerator / denumerator
+                sigma[i] = numerator / denominator
+                if sigma[i] < min_sigma:
+                    sigma[i] = min_sigma
 
             for i in range(N):
                 numerator = 0
-                denumerator = 0
-                for t in range(T-1):
+                denominator = 0
+                for t in range(T):
                     numerator = numerator + gamma[t, i] * O[t]
-                    denumerator = denumerator + gamma[t, i]
+                    denominator = denominator + gamma[t, i]
                 
-                mu[i] = numerator / denumerator
-        
+                mu[i] = numerator / denominator
+
+            for i in range(N):
+                pi[i] = gamma[0, i]
+
         return (A, mu, sigma, pi)
 
 
