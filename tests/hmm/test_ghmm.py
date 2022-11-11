@@ -3,9 +3,9 @@ import numpy as np
 import numpy.typing as npt
 from scipy.stats import norm
 
-import ghmm.algorithm as algo
+from hmm import ghmm
 
-class test_Alogirthm(unittest.TestCase):
+class test_ghmm(unittest.TestCase):
     tolerance = 1e-10
 
     O = np.array(range(4), dtype=np.float_)
@@ -30,7 +30,7 @@ class test_Alogirthm(unittest.TestCase):
         return frames
 
     def test_Frames(self):
-        smape = self.SMAPE(self.Frames(self.O, self.means, self.variances), algo.Frames(self.O, self.means, self.variances))
+        smape = self.SMAPE(self.Frames(self.O, self.means, self.variances), ghmm.Model.Frames(self.O, self.means, self.variances))
         self.assertLessEqual(smape, self.tolerance)
     
     def Forward(self, A: npt.NDArray, frames: npt.NDArray, pi: npt.NDArray):
@@ -51,7 +51,7 @@ class test_Alogirthm(unittest.TestCase):
     def test_Forward(self):
         frames = self.Frames(self.O, self.means, self.variances)
 
-        smape = self.SMAPE(self.Forward(self.A, frames, self.pi), algo.Forward(self.A, frames, self.pi))
+        smape = self.SMAPE(self.Forward(self.A, frames, self.pi), ghmm.Model.Forward(self.A, frames, self.pi))
         self.assertLessEqual(smape, self.tolerance)
 
     def Backward(self, A: npt.NDArray, frames: npt.NDArray):
@@ -73,7 +73,7 @@ class test_Alogirthm(unittest.TestCase):
     def test_Backward(self):
         frames = self.Frames(self.O, self.means, self.variances)
         
-        smape = self.SMAPE(self.Backward(self.A, frames), algo.Backward(self.A, frames))
+        smape = self.SMAPE(self.Backward(self.A, frames), ghmm.Model.Backward(self.A, frames))
         self.assertLessEqual(smape, self.tolerance)
 
     def Likelihood(self, alpha: npt.NDArray):
@@ -89,7 +89,7 @@ class test_Alogirthm(unittest.TestCase):
         frames = self.Frames(self.O, self.means, self.variances)
         alpha = self.Forward(self.A, frames, self.pi)
 
-        smape = self.SMAPE(np.array([self.Likelihood(alpha)]), np.array([algo.Likelihood(alpha)]))
+        smape = self.SMAPE(np.array([self.Likelihood(alpha)]), np.array([ghmm.Model.Likelihood(alpha)]))
         self.assertLessEqual(smape, self.tolerance)
 
     def Gamma(self, alpha: npt.NDArray, beta: npt.NDArray):
@@ -114,7 +114,7 @@ class test_Alogirthm(unittest.TestCase):
         alpha = self.Forward(self.A, frames, self.pi)
         beta = self.Backward(self.A, frames)
 
-        smape = self.SMAPE(self.Gamma(alpha, beta), algo.Gamma(alpha, beta))
+        smape = self.SMAPE(self.Gamma(alpha, beta), ghmm.Model.Gamma(alpha, beta))
         self.assertLessEqual(smape, self.tolerance)
 
     def Xi(self, A: npt.NDArray, frames: npt.NDArray, alpha: npt.NDArray, beta: npt.NDArray):
@@ -140,7 +140,7 @@ class test_Alogirthm(unittest.TestCase):
         alpha = self.Forward(self.A, frames, self.pi)
         beta = self.Backward(self.A, frames)
         
-        smape = self.SMAPE(self.Xi(self.A, frames, alpha, beta), algo.Xi(self.A, frames, alpha, beta))
+        smape = self.SMAPE(self.Xi(self.A, frames, alpha, beta), ghmm.Model.Xi(self.A, frames, alpha, beta))
         self.assertLessEqual(smape, self.tolerance)
 
     def BaumWelch(self, O: npt.NDArray, A: npt.NDArray, means: npt.NDArray, variances: npt.NDArray, pi: npt.NDArray, tol: float, niter: int, min_variance = 1e-5):
@@ -209,20 +209,21 @@ class test_Alogirthm(unittest.TestCase):
         niter = 100
 
         res = self.BaumWelch(self.O, self.A, self.means, self.variances, self.pi, tol, niter)
-        algores = algo.BaumWelch(self.O, self.A, self.means, self.variances, self.pi, tol, niter)
+        model = ghmm.Model(self.A, self.means, self.variances, self.pi)
+        model.Fit(self.O, niter=niter, tol=tol)
 
         # A
-        smape = self.SMAPE(res[0], algores[0])
+        smape = self.SMAPE(res[0], model.A)
         self.assertLessEqual(smape, self.tolerance)
 
         # means
-        smape = self.SMAPE(res[1], algores[1])
+        smape = self.SMAPE(res[1], model.means)
         self.assertLessEqual(smape, self.tolerance)
 
         # variances
-        smape = self.SMAPE(res[2], algores[2])
+        smape = self.SMAPE(res[2], model.variances)
         self.assertLessEqual(smape, self.tolerance)
 
         # pi
-        smape = self.SMAPE(res[3], algores[3])
+        smape = self.SMAPE(res[3], model.startprob)
         self.assertLessEqual(smape, self.tolerance)
