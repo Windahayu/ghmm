@@ -2,13 +2,13 @@ import numpy as np
 import numpy.typing as npt
 from scipy.stats import norm
 
-def Frames(O: npt.NDArray, mu: npt.NDArray, sigma: npt.NDArray):
+def Frames(O: npt.NDArray, means: npt.NDArray, variances: npt.NDArray):
     (T, ) = O.shape
-    (N, ) = mu.shape
+    (N, ) = means.shape
 
     frames = np.empty((T, N))
     for i in range(T):
-        frames[i] = norm.pdf(O[i], mu, sigma)
+        frames[i] = norm.pdf(O[i], means, variances)
     
     return frames
 
@@ -58,28 +58,28 @@ def Gamma(alpha: npt.NDArray, beta: npt.NDArray):
 
     return gamma
 
-def BaumWelch(O: npt.NDArray, A: npt.NDArray, mu: npt.NDArray, sigma: npt.NDArray, pi: npt.NDArray, tol: float, niter: int, min_sigma = 1e-5):
+def BaumWelch(O: npt.NDArray, A: npt.NDArray, means: npt.NDArray, variances: npt.NDArray, pi: npt.NDArray, tol: float, niter: int, min_variance = 1e-5):
     (T, ) = O.shape
-    (N, ) = mu.shape
+    (N, ) = means.shape
 
     L = 1
     for _ in range(niter):
-        frames = Frames(O, mu, sigma)
+        frames = Frames(O, means, variances)
         alpha = Forward(A, frames, pi)
         beta = Backward(A, frames)
         delta = L - Likelihood(alpha)
         L = L + delta
 
         if np.absolute(delta) < tol:
-            return (A, mu, sigma, pi)
+            return (A, means, variances, pi)
 
         xi = Xi(A, frames, alpha, beta)
         gamma = Gamma(alpha, beta)
 
         A = (xi.sum(0).T / gamma[:T-1].sum(0)).T
-        sigma = (gamma * np.power(np.subtract.outer(O, mu), 2)).sum(0) / gamma.sum(0)
-        sigma = np.maximum(sigma, min_sigma)
-        mu = (gamma.T * O).sum(1) / gamma.sum(0)
+        variances = (gamma * np.power(np.subtract.outer(O, means), 2)).sum(0) / gamma.sum(0)
+        variances = np.maximum(variances, min_variance)
+        means = (gamma.T * O).sum(1) / gamma.sum(0)
         pi = gamma[0]
 
-    return (A, mu, sigma, pi)
+    return (A, means, variances, pi)
