@@ -24,7 +24,7 @@ class BaseModel(hmm.BaseModel):
         frames = np.empty((N, T))
         for i in range(N):
             for t in range(T):
-                frames[i, t] = norm.pdf(O[t], means[i], variances[i])
+                frames[i, t] = norm.pdf(O[t], means[i], np.sqrt(variances[i]))
 
         return frames
 
@@ -91,7 +91,7 @@ class Model(hmm.Model):
 
         frames = np.empty((N, T))
         for t in range(T):
-            frames[:, t] = norm.pdf(O[t], means, variances)
+            frames[:, t] = norm.pdf(O[t], means, np.sqrt(variances))
         
         return frames
 
