@@ -7,14 +7,14 @@ class BaseModel(hmm.BaseModel):
     A: npt.NDArray
     means: npt.NDArray
     variances: npt.NDArray
-    startprob: npt.NDArray
+    startprobs: npt.NDArray
     min_variance: np.float_
 
     def __init__(self, A: npt.NDArray, means: npt.NDArray, variances: npt.NDArray, startprob: npt.NDArray, min_variance: np.float_ = np.float_(1e-2)):
         self.A = A.copy()
         self.means = means.copy()
         self.variances = variances.copy()
-        self.startprob = startprob.copy()
+        self.startprobs = startprob.copy()
         self.min_variance = min_variance.copy()
 
     def Frames(self, O: npt.NDArray, means: npt.NDArray, variances: npt.NDArray):
@@ -52,18 +52,37 @@ class BaseModel(hmm.BaseModel):
             
             self.means[i] = numerator / denominator
 
+    def Fit(self, O: npt.NDArray, tol: np.float_, niter: np.int_):
+        L = 1
+        for _ in range(niter):
+            frames = self.Frames(O, self.means, self.variances)
+            alpha = self.Forward(self.A, frames, self.startprobs)
+            beta = self.Backward(self.A, frames)
+            delta = L - self.Likelihood(alpha)
+            L = L + delta
+
+            if np.absolute(delta) < tol:
+                return
+
+            xi = self.Xi(self.A, frames, alpha, beta)
+            gamma = self.Gamma(alpha, beta)
+
+            self.RestimateA(xi, gamma)
+            self.RestimateB(O, gamma)
+            self.RestimateStartProbs(gamma)
+
 class Model(hmm.Model):
     A: npt.NDArray
     means: npt.NDArray
     variances: npt.NDArray
-    startprob: npt.NDArray
+    startprobs: npt.NDArray
     min_variance: np.float_
 
     def __init__(self, A: npt.NDArray, means: npt.NDArray, variances: npt.NDArray, startprob: npt.NDArray, min_variance: np.float_ = np.float_(1e-2)):
         self.A = A.copy()
         self.means = means.copy()
         self.variances = variances.copy()
-        self.startprob = startprob.copy()
+        self.startprobs = startprob.copy()
         self.min_variance = min_variance.copy()
 
     def Frames(self, O: npt.NDArray, means: npt.NDArray, variances: npt.NDArray):
@@ -81,3 +100,23 @@ class Model(hmm.Model):
         self.variances = np.maximum(self.variances, self.min_variance)
 
         self.means = (gamma.T * O).sum(1) / gamma.sum(0)
+
+    def Fit(self, O: npt.NDArray, tol: np.float_, niter: np.int_):
+        L = 1
+        for _ in range(niter):
+            frames = self.Frames(O, self.means, self.variances)
+            alpha = self.Forward(self.A, frames, self.startprobs)
+            beta = self.Backward(self.A, frames)
+            delta = L - self.Likelihood(alpha)
+            L = L + delta
+
+            if np.absolute(delta) < tol:
+                return
+
+            xi = self.Xi(self.A, frames, alpha, beta)
+            gamma = self.Gamma(alpha, beta)
+
+            self.RestimateA(xi, gamma)
+            self.RestimateB(O, gamma)
+            self.RestimateStartProbs(gamma)
+
