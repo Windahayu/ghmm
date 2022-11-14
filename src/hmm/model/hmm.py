@@ -161,16 +161,8 @@ class Model(BaseModel):
         return frames
 
     def Forward(self, A: npt.NDArray, frames: npt.NDArray, startprobs: npt.NDArray):
-        (N, T) = frames.shape
-
-        alpha = np.empty((T, N))
-        alpha[0] = startprobs * frames[:, 0]
-        for t in range(1, T):
-            alpha[t] = np.matmul(
-                alpha[t-1], 
-                A * frames[:, t]
-            )
-
+        (_, T) = frames.shape
+        alpha = (np.cumproduct(frames, axis=1) * np.power.outer(A.sum(0), range(T))).T * startprobs
         return alpha
 
     def Backward(self, A: npt.NDArray, frames: npt.NDArray):
