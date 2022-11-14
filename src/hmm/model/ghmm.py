@@ -86,13 +86,7 @@ class Model(hmm.Model):
         self.min_variance = min_variance.copy()
 
     def Frames(self, O: npt.NDArray, means: npt.NDArray, variances: npt.NDArray):
-        (T, ) = O.shape
-        (N, ) = means.shape
-
-        frames = np.empty((N, T))
-        for t in range(T):
-            frames[:, t] = norm.pdf(O[t], means, np.sqrt(variances))
-        
+        frames = np.exp((np.power(np.subtract.outer(O, means), 2) / variances + np.log(2 * np.pi) + np.log(variances)).T / -2)
         return frames
 
     def RestimateB(self, O: npt.NDArray, gamma: npt.NDArray):
